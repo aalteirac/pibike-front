@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <link rel="manifest" href="img/site.webmanifest">
+    <link rel="mask-icon" href="img/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="viewport" content="user-scalable=no, width=device-width"/>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="stylesheet" href="css/onsen.css">
+    <link rel="stylesheet" href="css/onsen-comp.css">
+    <link rel="stylesheet" href="css/main.css?v=103">
+    <script src="sethst.js"></script>
+    <script src="schema.js"></script>
+    <script src="js/gauge.js"></script>
+    <script src="js/onsen.js"></script>
+    <script src="node_modules/hammerjs/hammer.min.js"></script>
+    <script src="node_modules/picasso.js/dist/picasso.js?v=103"></script>
+    <script src="node_modules/picasso-plugin-q/dist/picasso-q.js"></script>
+    <script src="node_modules/picasso-plugin-hammer/dist/picasso-hammer.js"></script>
+    <script src=scatterplot.js?v=103></script>
+    <script src=multiAx.js?v=103></script>
+    <script src="node_modules/enigma.js/enigma.js"></script>
+    <script src="index.js?v=103"></script>
+</head>
+<body>
+<!--<section id="header"></section>-->
+<ons-navigator id="navigator">
+    <ons-page>
+        <ons-splitter id="appSplitter">
+            <ons-splitter-side id="sidemenu" page="sidemenu.html" swipeable side="left" collapse="" width="260px"></ons-splitter-side>
+            <ons-splitter-content page="browse.html"></ons-splitter-content>
+        </ons-splitter>
+    </ons-page>
+</ons-navigator>
+
+<template id="runId.html">
+    <ons-page>
+        <ons-toolbar class="toolbarcolor toolbar_semi-transparent" modifier="transparent">
+            <div class="left" onclick="resize()"><ons-back-button><div class="bckbtn">Back</div></ons-back-button></div>
+            <div class="center"><ons-icon icon="md-chart-donut" size="32px, material:24px"></ons-icon> New Run </div>
+        </ons-toolbar>
+        <div style="text-align: center; margin-top: 15%;">
+            <p>
+                <ons-input id="username" modifier="underbar" placeholder="Rider name" float></ons-input>
+            </p>
+            <p>
+                <ons-input id="company" modifier="underbar" placeholder="Company" float></ons-input>
+            </p>
+            <p style="margin-top: 30px;">
+                <ons-button style="font-weight: 700;cursor:pointer;" onclick="startRun(false)"> RUN (need sensors) !!</ons-button>
+            </p>
+            <p style="margin-top: 30px;">
+                <ons-button style="font-weight: 700;cursor:pointer;" onclick="startRun(true)"> Simu (nothing needed) !!</ons-button>
+            </p>
+        </div>
+    </ons-page>
+</template>
+
+
+<template id="sidemenu.html">
+    <ons-page id="selBoxRiders" style="width: 170px">
+        <div class="content">
+            <ons-icon style="vertical-align:0;font-size: 26px" class="clearall ons-icon" icon="ion-navicon, material:md-menu"onclick="openMenu()"></ons-icon>
+            <ons-icon id="clearBtn" onclick="clearAll()" title="Clear All" icon="fa-eraser" class="clearall ons-icon fa-eraser fa"></ons-icon>
+            <ons-icon id="backBtn" onclick="back()" title="Back" icon="fa-chevron-circle-left" class="clearall ons-icon fa-chevron-circle-left fa"></ons-icon>
+            <ons-icon id="forwBtn" onclick="next()" title="Next" icon="fa-chevron-circle-right" class="clearall ons-icon fa-chevron-circle-right fa"></ons-icon>
+            <ons-list-item class="toolbar-button" id="tops">
+                <label class="left" onclick="topVis()">
+                    <ons-checkbox id="cktop" class="ckb" input-id="check-2"></ons-checkbox>
+                </label>
+                <label style="color: white" for="check-2" class="center">
+                    Top 5
+                </label>
+            </ons-list-item>
+            <ons-list-item>
+                <div class="left" style="width: 28px">
+                <ons-icon icon="md-bike" class="listIcon list-item__icon ons-icon zmdi zmdi-bike"></ons-icon>
+                </div>
+                <div>
+                    Riders
+                </div>
+            </ons-list-item>
+            <div id="rfield" class="listbox">
+            </div>
+            <ons-list-item>
+                <div class="left" style="width: 28px">
+                    <ons-icon icon="fa-industry" class="listIcon list-item__icon ons-icon fa fa-industry"></ons-icon>
+                </div>
+                <div>
+                    Companies
+                </div>
+            </ons-list-item>
+            <div id="cfield" class="listbox">
+            </div>
+        </div>
+    </ons-page>
+</template>
+
+<!-- The Browsing Page -->
+
+<template id="browse.html">
+    <ons-page id="browse-page">
+        <ons-toolbar class="toolbarcolor toolbar_semi-transparent" modifier="transparent">
+            <div class="left">
+                <ons-toolbar-button onclick="openMenu()">
+                    <ons-icon icon="ion-navicon, material:md-menu">
+                        <span style="display: none" id="badge" class="w3-badge w3-green"></span>
+                    </ons-icon>
+
+                </ons-toolbar-button>
+                <ons-toolbar-button onclick="newRun()" id="newrun">
+                    <ons-icon icon="fa-user-plus"  class="btntool"></ons-icon>
+                </ons-toolbar-button>
+            </div>
+            <div class="center"><ons-icon icon="md-chart-donut" size="32px, material:24px"></ons-icon> PI Bike </div>
+            <div id="stats" class="right toolbarbutton">
+                <ons-toolbar-button id="freem" title="Free Mem in Mb" ></ons-toolbar-button>
+                <!--<ons-toolbar-button id="simu" title="Simulate 5 data acquisition" onclick="simulate()"><ons-icon icon="md-bike"></ons-icon></ons-toolbar-button>-->
+                <!--<ons-toolbar-button id="dele" title="Delete all data" onclick="deleteAll()"><ons-icon icon="md-delete"></ons-icon></ons-toolbar-button>-->
+                <!--<ons-button>Delete All Data</ons-button>-->
+            </div>
+        </ons-toolbar>
+
+        <div class="content" style="text-align: center">
+            <div class="toppanel">
+            </div>
+            <!--KPI-->
+            <ons-carousel item-width="340px" centered swipeable overscrollable auto-scroll class="kippanel">
+                        <!--LIVE DATA-->
+                        <ons-carousel-item centered modifier="nodivider" class="">
+                            <table style="width: 100%;">
+                                <tr><td style="font-weight: 900;font-size: 11px">
+                                    LIVE DATA
+                                </td></tr>
+                                <tr><td>
+                                    <div style="display:  flex;justify-content: space-around">
+                                        <div>
+                                            <canvas width="160" height="135" id="liveSpeed"></canvas>
+                                            <div id="liveSpeedText" style="margin-top:  -8px;">Mph</div>
+                                        </div>
+                                       <div>
+                                            <canvas width="125" height="90" id="liveCadence"></canvas>
+                                            <div id="liveCadenceText" style="margin-top:  -8px;">Rpm</div>
+                                       </div>
+                                    </div>
+                                </td></tr>
+                            </table>
+                        </ons-carousel-item>
+                        <!--//CSR DONATION & BIKE DONATED-->
+                        <ons-carousel-item centered modifier="nodivider" class="">
+                            <div style="display:  flex;justify-content: space-around">
+                                <div class="kpi" id="mykpi5">
+                                    <table>
+                                        <tbody>
+                                        <tr>
+                                            <td class="kppilabel" style="height: 27px;">
+                                                <div>
+                                                    <div id="kpirider5">
+                                                        LOADING
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <ons-icon icon="fa-money" class="kpiicon"></ons-icon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <div id="kpi5" class="kpitext">
+                                                        ...
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div>
+                                                        Thanks !
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="kpi" id="mykpi6">
+                                    <table>
+                                        <tbody>
+                                        <tr>
+                                            <td class="kppilabel" style="height: 27px;">
+                                                <div>
+                                                    <div id="kpirider6">
+                                                        LOADING
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <ons-icon icon="fa-gift" class="kpiicon"></ons-icon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <div id="kpi6" class="kpitext">
+                                                        ...
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div>
+                                                        Bikes Won
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </ons-carousel-item>
+                        <!--//Distance & HR-->
+                        <ons-carousel-item centered modifier="nodivider" class="">
+                            <div style="display:  flex;margin-left: 35px">
+                                <div class="kpi" id="mykpi10">
+                                    <table>
+                                        <tbody>
+                                        <tr>
+                                            <td class="kppilabel" style="height: 27px;">
+                                                <div>
+                                                    <div id="kpirider10">
+                                                        LOADING
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <ons-icon icon="fa-globe" class="kpiicon"></ons-icon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <div id="kpi10" class="kpitext">
+                                                        ...
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div>
+                                                        Miles
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div style="display:none" class="kpi" id="mykpi2">
+                                    <table>
+                                        <tbody>
+                                        <tr>
+                                            <td class="kppilabel" style="height: 27px;">
+                                                <div>
+                                                    <div id="kpirider2">
+                                                        LOADING
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <ons-icon icon="fa-heartbeat" class="kpiicon"></ons-icon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <div id="kpi2" class="kpitext">
+                                                        ...
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div>
+                                                        Beat/mn
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </ons-carousel-item>
+                        <!--//AVG SPEED & TOP SPEED-->
+                        <ons-carousel-item centered modifier="nodivider" class="">
+                            <div style="display:  flex;justify-content: space-around">
+                                <div class="kpi" id="mykpi1">
+                                    <table>
+                                        <tbody>
+                                        <tr>
+                                            <td class="kppilabel" style="height: 27px;">
+                                                <div>
+                                                    <div id="kpirider1">
+                                                        LOADING
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <ons-icon icon="fa-tachometer" class="kpiicon avg"></ons-icon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <div id="kpi1" class="kpitext">
+                                                        ...
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div>
+                                                        Miles/h
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="kpi" id="mykpi7">
+                                    <table>
+                                        <tbody>
+                                        <tr>
+                                            <td class="kppilabel" style="height: 27px;">
+                                                <div>
+                                                    <div id="kpirider7">
+                                                        LOADING
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <ons-icon icon="fa-tachometer" class="kpiicon topk"></ons-icon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <div id="kpi7" class="kpitext">
+                                                        ...
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div>
+                                                        Miles/h
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </ons-carousel-item>
+                        <!--//AVG CADENCE & TOP CADENCE-->
+                        <ons-carousel-item centered modifier="nodivider" class="">
+                            <div style="display:  flex;justify-content: space-around">
+                                <div class="kpi" id="mykpi4">
+                                <table>
+                                    <tbody>
+                                    <tr>
+                                        <td class="kppilabel" style="height: 27px;">
+                                            <div>
+                                                <div id="kpirider4">
+                                                    LOADING
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <ons-icon icon="fa-sliders" class="kpiicon avg"></ons-icon>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <div id="kpi4" class="kpitext">
+                                                    ...
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div>
+                                                    Rpm
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                                <div class="kpi" id="mykpi8">
+                                    <table>
+                                        <tbody>
+                                        <tr>
+                                            <td class="kppilabel" style="height: 27px;">
+                                                <div>
+                                                    <div id="kpirider8">
+                                                        LOADING
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <ons-icon icon="fa-sliders" class="kpiicon topk"></ons-icon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <div id="kpi8" class="kpitext">
+                                                        ...
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div>
+                                                        Rpm
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </ons-carousel-item>
+                </ons-carousel>
+            <!-- chart-->
+            <div id="mychart">
+
+            </div>
+            <div id="mychart2">
+
+            </div>
+        </div>
+    </ons-page>
+</template>
+
+
+<!-- The Details Page -->
+
+<template id="details.html">
+    <ons-page id="details-page">
+        <ons-toolbar modifier="transparent">
+            <div class="left"><ons-back-button></ons-back-button></div>
+            <div class="right">
+                <ons-toolbar-button>
+                    <ons-icon style="color: white" icon="ion-ios-more,material:ion-android-more-vertical"></ons-icon>
+                </ons-toolbar-button>
+            </div>
+        </ons-toolbar>
+
+        <div class="content" style="text-align: center;">
+            <div class="details_content">
+                <ons-carousel class="carousel" swipeable auto-scroll id="carousel">
+                    <ons-carousel-item>
+                        <div>
+                            <figure>
+                                <ons-icon icon="md-bike" size="54px"></ons-icon>
+                                <div class="rider_title_details" id="rider_title">Rider 1</div>
+                            </figure>
+                            <div>
+                                <div class="rider_follow">FOLLOW</div>
+                            </div>
+                        </div>
+                    </ons-carousel-item>
+                </ons-carousel>
+            </div>
+
+            <!--HERE THE DETAILS-->
+
+        </div>
+
+
+    </ons-page>
+</template>
+
+<ons-toast id="myToast" animation="ascend">
+    Hey
+    <button onclick="myToast.hide()">ok</button>
+</ons-toast>
+</body>
+</html>
