@@ -5,13 +5,13 @@ const colors = {
     Speed: '#2489ce',
     Cadence: '#6c0'
 }
-
+var unit;
 class MultiAx {
     constructor() {
         this.pic = null;
     }
 
-    paintChart(element, layout) {
+    paintChart(element, layout,un) {
         //if (!(layout.qHyperCube &&
         //    layout.qHyperCube.qDataPages &&
         //    layout.qHyperCube.qDataPages[0] &&
@@ -19,7 +19,7 @@ class MultiAx {
         //) {
         //    return;
         //}
-
+        unit=un;
         var settings = MultiAx.mx();
         this.settings=settings;
         var arr = [
@@ -81,114 +81,114 @@ class MultiAx {
     }
 
     static mx() {
-       return {
-           collections: [{
-               key: 'lines',
-               data: {
-                   extract: {
-                       field: 'Time',
-                       props: {
-                           speed: { field: 'Speed', },
-                           cadence: { field: 'Cadence',}
-                       }
-                   }
-               }
-           }],
-           scales: {
-               scSpeed: {
-                   data: { field: 'Speed' },
-                   invert: true,
-                   min: 0,
-                   max: 65
-                   //expand: 0.2
-               },
-               scCadence: {
-                   data: { field: 'Cadence',},
-                   invert: true,
-                   min: 0,
-                   //max: 160
-                   //expand: 0.2
-               },
-               time: {data: { extract: { field: 'Time' } } }
-           },
-           components: [
-               {
-               type: 'axis',
-               dock: 'right',
-               scale: 'scSpeed',
-               //formatter: {
-               //    type: 'd3-number',
-               //    format: '$,.1r'
-               //},
-               settings: {
-                   labels: {
-                       fill: colors.Speed
-                   }
-               },
-           },{
-               type: 'axis',
-               dock: 'left',
-               scale: 'scCadence',
-               settings: {
-                   labels: {
-                       fill: colors.Cadence
-                   }
-               },
-               //formatter: {
-               //    type: 'd3-number',
-               //    format: '.0%'
-               //}
-           },{
-               type: 'axis',
-               dock: 'bottom',
-               scale: 'time',
-               settings: {
-                   labels: {
-                       maxLengthPx: 55,
-                       minLengthPx:55,
-                   }
-               },
-               formatter: {
-                   type: 'd3-time',
-                   format: '%H:%M:%S'
-               }
-           },
-               {
-                   type: 'text',
-                   text: 'Mph',
-                   dock: 'right',
-                   settings: {
-                       anchor: 'center'
-                   }
-               },
-               {
-                   type: 'text',
-                   text: 'LAST 3MN...',
-                   dock: 'top',
-                   settings: {
-                       anchor: 'center',
-                   }
-               },
-               {
-                   type: 'text',
-                   text: 'Rpm',
-                   dock: 'left',
-                   settings: {
-                       anchor: 'center'
-                   }
-               },{
-               type: 'legend-cat',
-               dock: 'left',
-                   layout:{size: 1},
-               scale: {
-                   type: 'categorical-color',
-                   data: ['Cadence','Speed'],
-                   range: [colors.Cadence, colors.Speed]
-               }
-           }, MultiAx.line('scCadence', 'cadence', colors.Cadence,1),
-               MultiAx.line('scSpeed', 'speed', colors.Speed,6)
-           ]
-       }
+        return {
+            collections: [{
+                key: 'lines',
+                data: {
+                    extract: {
+                        field: 'Time',
+                        props: {
+                            speed: { field: 'Speed', },
+                            cadence: { field: 'Cadence',}
+                        }
+                    }
+                }
+            }],
+            scales: {
+                scSpeed: {
+                    data: { field: 'Speed' },
+                    invert: true,
+                    min: 0,
+                    max: 115
+                    //expand: 0.2
+                },
+                scCadence: {
+                    data: { field: 'Cadence',},
+                    invert: true,
+                    min: 0,
+                    //max: 160
+                    //expand: 0.2
+                },
+                time: {data: { extract: { field: 'Time' } } }
+            },
+            components: [
+                {
+                    type: 'axis',
+                    dock: 'right',
+                    scale: 'scSpeed',
+                    //formatter: {
+                    //    type: 'd3-number',
+                    //    format: '$,.1r'
+                    //},
+                    settings: {
+                        labels: {
+                            fill: colors.Speed
+                        }
+                    },
+                },{
+                    type: 'axis',
+                    dock: 'left',
+                    scale: 'scCadence',
+                    settings: {
+                        labels: {
+                            fill: colors.Cadence
+                        }
+                    },
+                    //formatter: {
+                    //    type: 'd3-number',
+                    //    format: '.0%'
+                    //}
+                },{
+                    type: 'axis',
+                    dock: 'bottom',
+                    scale: 'time',
+                    settings: {
+                        labels: {
+                            maxLengthPx: 55,
+                            minLengthPx:55,
+                        }
+                    },
+                    formatter: {
+                        type: 'd3-time',
+                        format: '%H:%M:%S'
+                    }
+                },
+                {
+                    type: 'text',
+                    text: unit,
+                    dock: 'right',
+                    settings: {
+                        anchor: 'center'
+                    }
+                },
+                {
+                    type: 'text',
+                    text: 'Last Minutes...',
+                    dock: 'top',
+                    settings: {
+                        anchor: 'center',
+                    }
+                },
+                {
+                    type: 'text',
+                    text: 'Rpm',
+                    dock: 'left',
+                    settings: {
+                        anchor: 'center'
+                    }
+                },{
+                    type: 'legend-cat',
+                    dock: 'left',
+                    layout:{size: 1},
+                    scale: {
+                        type: 'categorical-color',
+                        data: ['Cadence','Speed'],
+                        range: [colors.Cadence, colors.Speed]
+                    }
+                }, MultiAx.line('scCadence', 'cadence', colors.Cadence,1),
+                MultiAx.line('scSpeed', 'speed', colors.Speed,6)
+            ]
+        }
 
     }
 
@@ -203,61 +203,61 @@ class MultiAx {
                 t: { data: { extract: { field: 'qDimensionInfo/0' } } }
             },
             components: [
-              {
-                type: 'axis',
-                dock: 'left',
-                scale: 'y'
-            },{
-                type: 'axis',
-                dock: 'bottom',
-                scale: 't',
-                formatter: {
-                    formatter: 'd3', // The type of formatter to use
-                    type: 'time', // The type of data to format
-                    format: '%Y-%m-%d' // Format pattern
-                },
-                settings:{
-                    ticks: {
-                        show: true, // Toggle ticks on/off // Optional
-                        margin: 0, // Space in pixels between the ticks and the line. // Optional
-                        tickSize: 8, // Size of the ticks in pixels. // Optional
+                {
+                    type: 'axis',
+                    dock: 'left',
+                    scale: 'y'
+                },{
+                    type: 'axis',
+                    dock: 'bottom',
+                    scale: 't',
+                    formatter: {
+                        formatter: 'd3', // The type of formatter to use
+                        type: 'time', // The type of data to format
+                        format: '%Y-%m-%d' // Format pattern
                     },
-                    minorTicks: {
-                        show: true, // Toggle minor-ticks on/off // Optional
-                        tickSize: 3, // Size of the ticks in pixels. // Optional
-                        margin: 0, // Space in pixels between the ticks and the line. // Optional
-                    },
-                    line: {
-                        show: true, // Toggle line on/off // Optional
-                    }
-                }
-            }, {
-                key: 'lines',
-                type: 'line',
-                data: {
-                    extract: {
-                        field: 'qDimensionInfo/0',
-                        props: {
-                            low: { field: 'qMeasureInfo/0' },
-                            high: { field: 'qMeasureInfo/1' }
+                    settings:{
+                        ticks: {
+                            show: true, // Toggle ticks on/off // Optional
+                            margin: 0, // Space in pixels between the ticks and the line. // Optional
+                            tickSize: 8, // Size of the ticks in pixels. // Optional
+                        },
+                        minorTicks: {
+                            show: true, // Toggle minor-ticks on/off // Optional
+                            tickSize: 3, // Size of the ticks in pixels. // Optional
+                            margin: 0, // Space in pixels between the ticks and the line. // Optional
+                        },
+                        line: {
+                            show: true, // Toggle line on/off // Optional
                         }
                     }
-                },
-                settings: {
-                    coordinates: {
-                        major: { scale: 't' },
-                        minor0: { scale: 'y', ref: 'low' },
-                        minor: { scale: 'y', ref: 'high' }
+                }, {
+                    key: 'lines',
+                    type: 'line',
+                    data: {
+                        extract: {
+                            field: 'qDimensionInfo/0',
+                            props: {
+                                low: { field: 'qMeasureInfo/0' },
+                                high: { field: 'qMeasureInfo/1' }
+                            }
+                        }
                     },
-                    layers: {
-                        curve: 'monotone',
-                        line: {
-                            show: false
+                    settings: {
+                        coordinates: {
+                            major: { scale: 't' },
+                            minor0: { scale: 'y', ref: 'low' },
+                            minor: { scale: 'y', ref: 'high' }
                         },
-                        area: {}
+                        layers: {
+                            curve: 'monotone',
+                            line: {
+                                show: false
+                            },
+                            area: {}
+                        }
                     }
-                }
-            }]
+                }]
         }
     }
 

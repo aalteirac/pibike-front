@@ -4,6 +4,9 @@ picasso.use(picassoHammer);
 let _current = null;
 let _dt=[];
 
+var spUnit;
+var dstUnit;
+
 class Scatterplot {
     constructor() {
         this.axisPainted = false;
@@ -37,7 +40,9 @@ class Scatterplot {
     //    });
     //}
 
-    paintScatterplot(element, layout, bike,model) {
+    paintScatterplot(element, layout, bike,model,spUn,dstUn) {
+        spUnit=spUn;
+        dstUnit=dstUn;
         if (!(layout.qHyperCube &&
             layout.qHyperCube.qDataPages &&
             layout.qHyperCube.qDataPages[0] &&
@@ -69,7 +74,7 @@ class Scatterplot {
                 settings,
             });
             this.pic.brush('highlight').on('update', (added) => {
-               var selections= picassoQ.qBrushHelper(scatterplot.pic.brush('highlight'));
+                var selections= picassoQ.qBrushHelper(scatterplot.pic.brush('highlight'));
                 //console.log(scatterplot.pic.lass);
                 if(selections[0] && selections[0].params[2] && (scatterplot.pic.lass==null || scatterplot.pic.lass==false))
                     scatterplot.model.selectHyperCubeValues("/qHyperCubeDef",0,selections[0].params[2],false).then(()=> {
@@ -173,11 +178,11 @@ class Scatterplot {
                             isNaN(fromTop) ? fromTop = 0 : fromTop = fromTop;
                             isNaN(toTop) ? toTop = 0 : toTop = toTop;
                             if (curPoint.data.label != '-')
-                            addKeyFrames(
-                                curPoint.data.label.replace(/^[^a-z]+|[^\w:.-]+/gi, ""),
-                                `from {left:${fromLeft}px;top: ${fromTop}px;}
+                                addKeyFrames(
+                                    curPoint.data.label.replace(/^[^a-z]+|[^\w:.-]+/gi, ""),
+                                    `from {left:${fromLeft}px;top: ${fromTop}px;}
                                  to {left:${toLeft}px;top: ${toTop}px;}`
-                            )
+                                )
                             const style = {
                                 position: 'absolute',
                                 left: `${(this.size.width * row.x) - (data.settings.width / 2)}px`,
@@ -299,126 +304,126 @@ class Scatterplot {
                 },
             },
             components: [
-            {
-                key: 'y-axis',
-                type: 'axis',
-                scale: 's',
-                dock: 'left',
-            },
-            //{
-            //    key:  'leg',
-            //    type: 'legend-cat',
-            //    dock: 'right',
-            //    scale: 'col',
-            //    settings: {
-            //        title: {
-            //            show: false
-            //        },
-            //        navigation: {
-            //            button: {
-            //                class: {
-            //                    'my-button': true
-            //                },
-            //                content: function (h, state) {
-            //                    document.getElementById('navbutton');
-            //                }
-            //            }
-            //        }
-            //    }
-            //},
-            {
-                key: 'lassoComp',
-                displayOrder:300,
-                type: 'brush-lasso',
-                settings:{
-                    lasso: {
-                        fill: 'grey', // Optional
-                        stroke: 'white', // Optional
-                        strokeWidth: 2, // Optional
-                        opacity: 0.3, // Optional
-                    },
-                    snapIndicator: {  // Optional
-                        // Snap indicator settings
-                        threshold: 75, // The distance in pixel to show the snap indicator, if less then threshold the indicator is dispalyed // Optional
-                        strokeDasharray: '5, 5', // Optional
-                        stroke: 'white', // Optional
-                        strokeWidth: 2, // Optional
-                        opacity: 0.5, // Optional
-                    },
-                    startPoint: {  // Optional
-                        // Start point style settings
-                        fill: 'white',
-                        r: 5, // Circle radius // Optional
-                        stroke: 'white', // Optional
-                        strokeWidth: 1, // Optional
-                        opacity: 1, // Optional
-                    },
-                    brush: {
-                        components: [
-                            {
-                                key: 'p',
-                                contexts: ['highlight'],
-                                //action:"add",
-                            }
-                        ]
-                    }
-                }
+                {
+                    key: 'y-axis',
+                    type: 'axis',
+                    scale: 's',
+                    dock: 'left',
                 },
-            {
-                key: 'x-axis',
-                type: 'axis',
-                scale: 'm',
-                dock: 'bottom',
-                formatter: {
-                    formatter: 'd3',
-                    type: 'number',
-                    format: '.3n'
-                }
-            },
-            {
-                key: 'p',
-                type: 'point',
-                displayOrder: 2,
-                data: {
-                    extract: {
-                        field: 'qDimensionInfo/0',
-                        props: {
-                            y: {field: 'qMeasureInfo/0'},
-                            x: {field: 'qMeasureInfo/1'},
-                            num: {field: 'qMeasureInfo/0'},
-                            qMeasure: {field: 'qMeasureInfo/0'},
-                            qMeasure2: {field: 'qMeasureInfo/1'},
-                            group:{field: 'qDimensionInfo/0'},
-                            qDimension: data => data,
+                //{
+                //    key:  'leg',
+                //    type: 'legend-cat',
+                //    dock: 'right',
+                //    scale: 'col',
+                //    settings: {
+                //        title: {
+                //            show: false
+                //        },
+                //        navigation: {
+                //            button: {
+                //                class: {
+                //                    'my-button': true
+                //                },
+                //                content: function (h, state) {
+                //                    document.getElementById('navbutton');
+                //                }
+                //            }
+                //        }
+                //    }
+                //},
+                {
+                    key: 'lassoComp',
+                    displayOrder:300,
+                    type: 'brush-lasso',
+                    settings:{
+                        lasso: {
+                            fill: 'grey', // Optional
+                            stroke: 'white', // Optional
+                            strokeWidth: 2, // Optional
+                            opacity: 0.3, // Optional
+                        },
+                        snapIndicator: {  // Optional
+                            // Snap indicator settings
+                            threshold: 75, // The distance in pixel to show the snap indicator, if less then threshold the indicator is dispalyed // Optional
+                            strokeDasharray: '5, 5', // Optional
+                            stroke: 'white', // Optional
+                            strokeWidth: 2, // Optional
+                            opacity: 0.5, // Optional
+                        },
+                        startPoint: {  // Optional
+                            // Start point style settings
+                            fill: 'white',
+                            r: 5, // Circle radius // Optional
+                            stroke: 'white', // Optional
+                            strokeWidth: 1, // Optional
+                            opacity: 1, // Optional
+                        },
+                        brush: {
+                            components: [
+                                {
+                                    key: 'p',
+                                    contexts: ['highlight'],
+                                    //action:"add",
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    key: 'x-axis',
+                    type: 'axis',
+                    scale: 'm',
+                    dock: 'bottom',
+                    formatter: {
+                        formatter: 'd3',
+                        type: 'number',
+                        format: '.3n'
+                    }
+                },
+                {
+                    key: 'p',
+                    type: 'point',
+                    displayOrder: 2,
+                    data: {
+                        extract: {
+                            field: 'qDimensionInfo/0',
+                            props: {
+                                y: {field: 'qMeasureInfo/0'},
+                                x: {field: 'qMeasureInfo/1'},
+                                num: {field: 'qMeasureInfo/0'},
+                                qMeasure: {field: 'qMeasureInfo/0'},
+                                qMeasure2: {field: 'qMeasureInfo/1'},
+                                group:{field: 'qDimensionInfo/0'},
+                                qDimension: data => data,
+                            },
                         },
                     },
-                },
-                settings: {
-                    x: {scale: 'm'},
-                    y: {scale: 's'},
-                    shape: 'circle',
-                    size: 0.25,
-                    strokeWidth: 2,
-                    //stroke: '#fff',
-                    opacity: 1,
-                    fill: {scale: 'col',ref:'group'},
-                },
-                brush: {
-                    trigger: [
-                        //{
-                        //    on: 'tap',
-                        //    data: ['qDimension', 'qMeasure'],
-                        //    contexts: ['tooltip'],
-                        //},
-                        {
-                        on: 'over',
-                        action: 'set',
-                        contexts: ['tooltip'],
-                        data: ['qDimension', 'qMeasure'],
-                        //propagation: 'c',
-                        }
-                    ],
-                    consume: [
+                    settings: {
+                        x: {scale: 'm'},
+                        y: {scale: 's'},
+                        shape: 'circle',
+                        size: 0.25,
+                        strokeWidth: 2,
+                        //stroke: '#fff',
+                        opacity: 1,
+                        fill: {scale: 'col',ref:'group'},
+                    },
+                    brush: {
+                        trigger: [
+                            //{
+                            //    on: 'tap',
+                            //    data: ['qDimension', 'qMeasure'],
+                            //    contexts: ['tooltip'],
+                            //},
+                            {
+                                on: 'over',
+                                action: 'set',
+                                contexts: ['tooltip'],
+                                data: ['qDimension', 'qMeasure'],
+                                //propagation: 'c',
+                            }
+                        ],
+                        consume: [
                             {
                                 context: 'highlight',
                                 style: {
@@ -433,74 +438,74 @@ class Scatterplot {
                                 },
 
                             }
-                    ]
+                        ]
+                    },
                 },
-            },
-            {
+                {
                     type: 'text',
-                    text: 'Top Speed (Mph)',
+                    text: 'Top Speed ('+spUnit+')',
                     dock: 'left',
                     settings: {
                         anchor: 'center'
                     }
                 },
-            {
+                {
                     type: 'text',
-                    text: 'Distance in Miles',
+                    text: 'Distance in '+dstUnit,
                     dock: 'bottom',
                     settings: {
                         anchor: 'center'
                     }
                 },
-            {
-                type: 'labels',
-                displayOrder: 5,
-                settings: {
-                    sources: [{
-                        component: 'p',
-                        selector: 'circle',
-                        strategy: {
-                            type: 'bar',
-                            settings: {
-                                direction: 'left',
-                                fontFamily: 'Helvetica',
-                                fontSize: 1,
-                                color: 'white',
-                                //justify: "center",
-                                labels: [{
-                                    placements: [
-                                        { position: 'inside', fill: '#fff' },
-                                        //{position: 'outside', fill: '#666'},
-                                    ],
-                                    label ({data}) {return data ? data.label : ''}
-                                }],
+                {
+                    type: 'labels',
+                    displayOrder: 5,
+                    settings: {
+                        sources: [{
+                            component: 'p',
+                            selector: 'circle',
+                            strategy: {
+                                type: 'bar',
+                                settings: {
+                                    direction: 'left',
+                                    fontFamily: 'Helvetica',
+                                    fontSize: 1,
+                                    color: 'white',
+                                    //justify: "center",
+                                    labels: [{
+                                        placements: [
+                                            { position: 'inside', fill: '#fff' },
+                                            //{position: 'outside', fill: '#666'},
+                                        ],
+                                        label ({data}) {return data ? data.label : ''}
+                                    }],
+                                },
                             },
-                        },
-                    }],
-                },
-            }
+                        }],
+                    },
+                }
             ],
             interactions: [
                 {
-                type: 'hammer',
-                gestures: [{
-                    type: 'Pan',
-                    events: {
-                        panstart: function onPanStart(e) {
-                            // If it should trigger only on a specific component, use chartInstance.componentsFromPoint() to determine if start point is valid or not
-                            this.chart.lass=true;
-                            this.chart.component('lassoComp').emit('lassoStart', e);
-                        },
-                        pan: function onPan(e) {
-                            this.chart.component('lassoComp').emit('lassoMove', e);
-                        },
-                        panend: function onPanEnd(e) {
-                            this.chart.lass=false;
-                            var f=this.chart.component('lassoComp');
+                    type: 'hammer',
+                    gestures: [{
+                        type: 'Pan',
+                        events: {
+                            panstart: function onPanStart(e) {
+                                // If it should trigger only on a specific component, use chartInstance.componentsFromPoint() to determine if start point is valid or not
+                                this.chart.lass=true;
+                                this.chart.component('lassoComp').emit('lassoStart', e);
+                            },
+                            pan: function onPan(e) {
+                                this.chart.component('lassoComp').emit('lassoMove', e);
+                            },
+                            panend: function onPanEnd(e) {
+                                this.chart.lass=false;
+                                var f=this.chart.component('lassoComp');
                                 f.emit('lassoEnd', e);
+                            }
                         }
-                    }
-                }]
+                    }]
                 }
             ]
         };
@@ -526,11 +531,11 @@ class Scatterplot {
             },
             components: [
                 {
-                key: 'y-axis',
-                type: 'axis',
-                scale: 'y',
-                dock: 'left'
-            },
+                    key: 'y-axis',
+                    type: 'axis',
+                    scale: 'y',
+                    dock: 'left'
+                },
                 {
                     key: 'x-axis',
                     type: 'axis',
@@ -544,7 +549,7 @@ class Scatterplot {
                 },
                 {
                     type: 'text',
-                    text: 'Top Speed (Mph)',
+                    text: 'Top Speed ('+spUnit+')',
                     dock: 'left',
                     settings: {
                         anchor: 'center'
@@ -552,7 +557,7 @@ class Scatterplot {
                 },
                 {
                     type: 'text',
-                    text: 'Distance in Miles',
+                    text: 'Distance in '+dstUnit,
                     dock: 'bottom',
                     settings: {
                         anchor: 'center'
@@ -613,7 +618,7 @@ class Scatterplot {
                         field: 'qMeasureInfo/0'
                     },
                     expand: 0.2,
-                        invert: true
+                    invert: true
                 },
                 m: {
                     data: {
@@ -645,7 +650,7 @@ class Scatterplot {
                 type: 'point',
                 data: {
                     extract: {
-                       // field: 'qMeasureInfo/1',
+                        // field: 'qMeasureInfo/1',
                         props: {
                             y: { field: 'qMeasureInfo/0' },
                             x: { field: 'qMeasureInfo/1' },

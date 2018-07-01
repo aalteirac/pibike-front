@@ -1,8 +1,4 @@
 var curRider;
-//var hostPI = 'bike.qlik.com';
-//var hostPI='192.168.0.30';
-//var hostPI="alteirac.hd.free.fr";
-//var hostPI=window.location.hostname;
 var simuPort = '3000'
 var curLay;
 var curLineLay;
@@ -17,10 +13,14 @@ var session;
 var blInt;
 var countRepeat=30,countError = 10;
 var runTime=180000;
-const shownValues=240;
+const shownValues=370;
 var prevLay={};
 var prevLineLay={};
 var topOnly=false;
+const SPEED_UNIT="K"; //const SPEED_UNIT="K" or "M"
+const CURRENCY_UNIT="E"; //const DIST_UNIT="E" or "D"
+const MONEY_PER_UNIT=50;
+
 var myReuseableStylesheet = document.createElement('style'),
     addKeyFrames = null;
 document.head.appendChild(myReuseableStylesheet);
@@ -38,12 +38,25 @@ document.addEventListener('init', function (event) {
     }
 });
 
-var formatter = new Intl.NumberFormat('en-US', {
+var formatterUS = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
 });
+
+var formatterEU = new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+});
+
+function getFormatter(){
+    if(CURRENCY_UNIT=='D')
+        return formatterUS;
+    return formatterEU;
+}
 
 function ding(){
     //var audio = new Audio('audio/dring.mp3');
@@ -68,6 +81,24 @@ async function patchTop5AndCurrent(rn){
     scatterModel.applyPatches( patches, true );
 }
 
+async function patchLineRun(rn){
+    var patches = [{
+        'qPath': '/qHyperCubeDef/qDimensions/0/qDef/qFieldDefs/0',
+        'qOp': 'replace',
+        'qValue': `"=IF(Match(RiderID, '${rn}'),TimeStamp)"`
+    }];
+    lineModel.applyPatches( patches, true );
+}
+
+async function patchLineReset(){
+    var patches = [{
+        'qPath': '/qHyperCubeDef/qDimensions/0/qDef/qFieldDefs/0',
+        'qOp': 'replace',
+        'qValue': `"=TimeStamp"`
+    }];
+    lineModel.applyPatches( patches, true );
+}
+
 async function patchRun(rn){
     var patches = [{
         'qPath': '/qHyperCubeDef/qDimensions/0/qDef/qFieldDefs/0',
@@ -82,7 +113,7 @@ async function patchDim(){
     var patches = [{
         'qPath': '/qHyperCubeDef/qDimensions/0/qDef/qFieldDefs/0',
         'qOp': 'replace',
-        'qValue': `"RiderID"`
+        'qValue': `"=AGGR([Rank] & ' - ' & RiderID,RiderID)"`
     }];
     scatterModel.applyPatches( patches, true );
 }
@@ -104,32 +135,36 @@ async function startRun(simu = false) {
         Scatterplot.current=rn;
         document.querySelector('#navigator').popPage();
         setTimeout(()=>{
-            ons.notification.toast('Start pedaling NOW !!', { timeout: 4000, animation: 'fall' })
+            ons.notification.toast('Start pedaling NOW !!', { timeout: 8000, animation: 'fall' })
         },1000)
         document.getElementById("newrun").setAttribute("disabled", "true");
         document.getElementById("tops").setAttribute("disabled", "true");
         document.getElementById("cktop").setAttribute("checked", "");
         topOnly=true;
-        patchRun(rn);
+        setTimeout(()=> {
+            patchRun(rn);
+            patchLineRun(rn);
+        },9000)
+
         setTimeout(()=> {
             ons.notification.toast('Come on !! Still 10 seconds !!', { timeout: 3000, animation: 'ascend' })
         },runTime-10000)
-		setTimeout(()=> {
+        setTimeout(()=> {
             ons.notification.toast('Unleash the Power !! 30 seconds !!', { timeout: 3000, animation: 'ascend' })
         },runTime-30000)
-		setTimeout(()=> {
+        setTimeout(()=> {
             ons.notification.toast('All good ? 2mn remaining', { timeout: 3000, animation: 'ascend' })
         },runTime-120000)
-		setTimeout(()=> {
+        setTimeout(()=> {
             ons.notification.toast('Still alive ? 1mn to go', { timeout: 3000, animation: 'ascend' })
         },runTime-60000)
         if (curLay)
             paintChart(curLay)
         setTimeout(()=> {
-            //setTimeout(()=> {patchTop5AndCurrent(rn)},2000);
+            setTimeout(()=> {patchTop5AndCurrent(rn);patchLineReset()},2000);
             document.getElementById("newrun").removeAttribute("disabled");
             document.getElementById("tops").removeAttribute("disabled");
-            Scatterplot.current=null;
+            //Scatterplot.current=null;
             liveSpeed.set(0);
             liveCadence.set(0);
             Scatterplot.cached=[];
@@ -273,7 +308,7 @@ async function paintSelect(layout) {
 
 async function paintChart(layout,resize=false) {
     if ((layout && !(JSON.stringify(prevLay) === JSON.stringify(layout)))||(resize && layout)) {
-        scatterplot.paintScatterplot(document.getElementById('mychart'), layout,topOnly,scatterModel);
+        scatterplot.paintScatterplot(document.getElementById('mychart'), layout,topOnly,scatterModel,getSpeedUnit(),getDistanceUnit());
         prevLay=layout;
     }
 }
@@ -282,12 +317,12 @@ async function paintLineChart(layout,resize=false) {
     if ((layout && !(JSON.stringify(prevLineLay) === JSON.stringify(layout)))||(resize && layout)) {
         var dif=layout.qHyperCube.qSize.qcy-shownValues
         if(dif>0)
-        lineModel.getHyperCubeData('/qHyperCubeDef', [{qTop: dif, qLeft: 0, qHeight: shownValues, qWidth: 3}]).then(function(pages){
-            layout.qHyperCube.qDataPages=pages;
-            linechart.paintChart(document.getElementById('mychart2'), pages[0].qMatrix);
-        });
+            lineModel.getHyperCubeData('/qHyperCubeDef', [{qTop: dif, qLeft: 0, qHeight: shownValues, qWidth: 3}]).then(function(pages){
+                layout.qHyperCube.qDataPages=pages;
+                linechart.paintChart(document.getElementById('mychart2'), pages[0].qMatrix,getSpeedUnit());
+            });
         else{
-            linechart.paintChart(document.getElementById('mychart2'), layout.qHyperCube.qDataPages[0].qMatrix);
+            linechart.paintChart(document.getElementById('mychart2'), layout.qHyperCube.qDataPages[0].qMatrix,getSpeedUnit());
         }
         prevLineLay=layout;
     }
@@ -306,8 +341,8 @@ function paintKpi(layout) {
     var rider8 = 'BEST TOP CADENCE:<p class="ita">' + layout.qHyperCube.qDataPages[0].qMatrix[0][13].qText.toUpperCase() + " !!</p>";
     var rider10 = 'TOTAL<p>DISTANCE</p>';
 
-    var rider5 = 'CSR DONATION<p>1 mile=50$</p>';
-    var rider6 = 'WE SEE HOPE<p>2 miles=1 bike</p>';
+    var rider5 = 'CSR DONATION<p>1 '+getDistanceUnit()+' = '+getFormatter().format(MONEY_PER_UNIT)+'</p>';
+    var rider6 = 'WE SEE HOPE<p>2 '+getDistanceUnit()+' = 1 bike</p>';
     if (document.getElementById('kpirider1').innerHTML.indexOf('LOADING') == -1) {
         if (rider1 != document.getElementById('kpirider1').innerHTML) blinkChange(document.getElementById('mykpi1'));
         if (rider2 != document.getElementById('kpirider2').innerHTML) blinkChange(document.getElementById('mykpi2'));
@@ -327,7 +362,7 @@ function paintKpi(layout) {
     //document.getElementById('kpirider3').innerHTML = rider3;
     document.getElementById('kpi4').innerHTML = layout.qHyperCube.qDataPages[0].qMatrix[0][6].qNum.toFixed(2);
     document.getElementById('kpirider4').innerHTML = rider4;
-    document.getElementById('kpi5').innerHTML = formatter.format(layout.qHyperCube.qDataPages[0].qMatrix[0][9].qNum);
+    document.getElementById('kpi5').innerHTML = getFormatter().format(layout.qHyperCube.qDataPages[0].qMatrix[0][9].qNum);
     document.getElementById('kpirider5').innerHTML = rider5;
     document.getElementById('kpi6').innerHTML = layout.qHyperCube.qDataPages[0].qMatrix[0][8].qNum;
     document.getElementById('kpirider6').innerHTML = rider6;
@@ -485,6 +520,40 @@ function createMyLineChart(app) {
     });
 }
 
+function setUnitInUI(){
+    var x = document.getElementsByClassName("speedUnit");
+    var i;
+    for (i = 0; i < x.length; i++) {
+        x[i].innerText = getSpeedUnit();;
+    }
+    var y = document.getElementsByClassName("distanceUnit");
+    var j;
+    for (j = 0; j < y.length; j++) {
+        y[j].innerText = getDistanceUnit();
+    }
+}
+function getSpeedUnit(){
+    if(SPEED_UNIT=="K")
+        return "Km/h"
+    return "Mph";
+}
+function getDistanceUnit(){
+    if(SPEED_UNIT=="K")
+        return "Km."
+    return "Mi."
+}
+function inUnitperHour(){
+    if(SPEED_UNIT=="K")
+        return 3.600;
+    return mInMile*3600;
+}
+
+function inUnit(){
+    if(SPEED_UNIT=="K")
+        return 0.001
+    return mInMile;
+}
+
 function kpiProps() {
     return props = {
         qInfo: {
@@ -498,7 +567,7 @@ function kpiProps() {
             qMeasures: [
                 {
                     qDef: {
-                        qDef: `=max(DISTINCT Aggr(avg([Speed]*(${mInMile}*3600)),RiderID))`,
+                        qDef: `=max(DISTINCT Aggr(avg([Speed]*${inUnitperHour()}),RiderID))`,
                         qLabel: 'max speed',
                     },
                     qSortBy: {
@@ -570,7 +639,7 @@ function kpiProps() {
                 },
                 {//TODO
                     qDef: {
-                        qDef: `=Floor(Sum( [Distance]*${mInMile}/100 *50 )+16)`,
+                        qDef: `=Floor(Sum( [Distance]*${inUnit()}/100 *${MONEY_PER_UNIT} ))`,
                         qLabel: 'Bike donated',
                     },
                     qSortBy: {
@@ -579,7 +648,7 @@ function kpiProps() {
                 },
                 {//TODO
                     qDef: {
-                        qDef:`=Sum( [Distance]*${mInMile}*50 )`,
+                        qDef:`=Sum( [Distance]*${inUnit()}*${MONEY_PER_UNIT} )`,
                         //qDef: `=sum( { 1 } [Distance]*${mInMile}*150)`,
                         qLabel: 'Money donated',
                     },
@@ -589,7 +658,7 @@ function kpiProps() {
                 },//TOP SPEED
                 {
                     qDef: {
-                        qDef: `=max([Speed]*${mInMile}*3600)`,
+                        qDef: `=max([Speed]*${inUnitperHour()})`,
                         qLabel: 'top speed',
                     },
                     qSortBy: {
@@ -643,7 +712,7 @@ function kpiProps() {
                 },
                 {
                     qDef: {
-                        qDef: `=sum(Distance)*${mInMile}`,
+                        qDef: `=sum(Distance)*${inUnit()}`,
                         qLabel: 'total distance',
                     },
                     qSortBy: {
@@ -683,7 +752,7 @@ function scatterProps() {
             }],
             qMeasures: [{
                 qDef: {
-                    qDef: `=max([Speed]*(${mInMile}*3600))`,
+                    qDef: `=max([Speed]*${inUnitperHour()})`,
                     //qDef: `=avg([Speed])`,
                     qLabel: 'Max Speed Rate',
                 },
@@ -693,7 +762,8 @@ function scatterProps() {
             },
                 {
                     qDef: {
-                        qDef: `=sum([Distance]*${mInMile})`,
+                        qDef: `=sum([Distance]*${inUnit()})`,
+                        //qDef: `=sum([Distance])`,
                         qLabel: 'Total Distance',
                     },
                 }],
@@ -719,14 +789,14 @@ function lineProps() {
                 qDef: {
                     qGrouping: "N",
                     qFieldDefs: ['[TimeStamp]']
-                    //qFieldDefs: [`=AGGR(IF(Match(RiderID, 'Jimmie'),RiderID),TimeStamp)`]
+                    //qFieldDefs: [`=IF(Match(RiderID, 'J'),TimeStamp)`]
                 },
                 "qNullSuppression":true,
             }],
             qMeasures: [
                 {
                     qDef: {
-                        qDef:`=max( [Speed]*${mInMile}*3600 )`,
+                        qDef:`=max( [Speed]*${inUnitperHour()} )`,
                         //qDef: `=max(Speed)*(${mInMile}*3600)`,
                         qLabel: 'Max Speed',
                     },
@@ -735,17 +805,17 @@ function lineProps() {
                     }
                 },
                 {
-                qDef: {
-                    qDef:`=max( [Cadence] )`,
-                    //qDef: `=max(Cadence)`,
-                    qLabel: 'Max Cadence',
-                },
-                qSortBy: {
-                    qSortByNumeric: 1,
-                }
+                    qDef: {
+                        qDef:`=max( [Cadence] )`,
+                        //qDef: `=max(Cadence)`,
+                        qLabel: 'Max Cadence',
+                    },
+                    qSortBy: {
+                        qSortByNumeric: 1,
+                    }
                 }
 
-                ],
+            ],
             qInitialDataFetch: [{
                 qTop: 0, qHeight: 600, qLeft: 0, qWidth: 3,
             }],
@@ -820,9 +890,7 @@ function dynKey() {
     }
 }
 
-function meterSecToMileHour(metSec){
-    return metSec*(mInMile)*3600;
-}
+
 
 function gauge(trg,max,lab,pctcol){
     var opts = {
@@ -868,6 +936,16 @@ function gauge(trg,max,lab,pctcol){
     gauge.set(max); // set actual value
     return gauge;
 }
+function setRunState(state){
+    if(document.getElementById('strun') && state){
+        document.getElementById('strun').setAttribute("disabled", state);
+        document.getElementById('strun').textContent="Speed not detected"
+    }
+    if(document.getElementById('strun') && !state){
+        document.getElementById('strun').removeAttribute("disabled");
+        document.getElementById('strun').textContent="RUN !!";
+    }
+}
 
 async function init() {
     try {
@@ -881,18 +959,22 @@ async function init() {
         resize();
         dynKey();
         liveSpeed=gauge("liveSpeed",40,[0, 10, 15, 20, 25, 30,35,40],[[0.0, "#a9d70b" ], [0.40, "#f9c802"], [1.0, "#ff0000"]]);
+        if(SPEED_UNIT=="K")
+            liveSpeed=gauge("liveSpeed",90,[0, 10, 15, 20, 25, 30,35,40,50,60,70,80],[[0.0, "#a9d70b" ], [0.60, "#f9c802"], [1.0, "#ff0000"]]);
         liveCadence=gauge("liveCadence",200,[0,40,80,120,160,200],[[0.0, "#a9d70b" ], [0.10, "#f9c802"], [0.7, "#ff0000"]]);
+        setUnitInUI();
         setInterval(async ()=> {
             try {
                 var res = JSON.parse(await httpGet(`http://${hostPI}:${simuPort}/stat`));
                 res.speed=='None'?res.speed=0:""
+                if(res.speed==0)setRunState(true); else setRunState(false);
                 res.cadence=='None'?res.cadence=0:""
                 res.cadence<0?res.cadence=0:"";
                 //document.getElementById('kpi6').innerHTML =res.hr;
-                var speed=meterSecToMileHour(parseFloat(res.speed)).toFixed(0);
+                var speed=(parseFloat(res.speed) * inUnitperHour()).toFixed(0);
                 var cadence=parseFloat(res.cadence).toFixed(0);
                 liveSpeed.set(speed);liveCadence.set(cadence);liveCadenceText
-                document.getElementById('liveCadenceText').innerText=cadence+" Rpm";document.getElementById('liveSpeedText').innerText=speed+" Mph";
+                document.getElementById('liveCadenceText').innerText=cadence+" Rpm";document.getElementById('liveSpeedText').innerText=speed+" "+getSpeedUnit();
                 document.getElementById('freem').innerHTML = 'Session/Mem: ' + res.session.total + " / " + res.mem.committed.toFixed(2);
                 //if(res.curBikerName && res.isBiking==true){
                 //    Scatterplot.current=res.curBikerName;
